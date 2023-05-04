@@ -1,0 +1,102 @@
+@import "../../../../assets/scss/app.scss";
+
+$dropdown-margin:25px;
+
+.search-bar-wrapper {
+    position: relative;
+    width: 100%;
+
+    .search-bar-logo {
+        position: relative;
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        align-items: center;
+
+        .search-logo {
+            position: relative;
+        }
+
+        .search-title {
+            position: relative;
+            margin: 0px 20px;
+
+            .title {
+                margin: 0px;
+                color: black;
+                font-weight: bolder;
+                font-size: 1.5rem;
+            }
+
+            .subtitle {
+                margin: 0px 0px;
+                font-size: 1rem;
+                color: gray;
+            }
+        }
+    }
+
+    .search-bar-input-box {
+        position: relative;
+        margin-top: 20px;
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        align-items: center;
+
+        .input-wrapper {
+            position: relative;
+            flex: 1 1 400px;
+
+            @include tablet-landscape {
+                flex: 0 1 300px;
+            }
+
+            @include desktop {
+                flex: 0 1 400px;
+            }
+
+            .input-control {
+                all: unset;
+                width: 100%;
+                border-radius: 2px;
+                border: 1px solid $input-border-color;
+                padding: 10px;
+
+                &::placeholder {
+                    color: $input-border-color;
+                }
+
+            }
+        }
+
+        .dropdown-wrapper {
+            position: relative;
+            width: auto;
+            margin: 0px $dropdown-margin;
+            flex: 1 1 calc(150px - $dropdown-margin);
+
+            @include tablet-landscape {
+                flex: 0 1 calc(150px - $dropdown-margin);
+            }
+
+            @include desktop {
+                flex: 0 1 calc(150px - $dropdown-margin);
+            }
+
+            .dropdown-control {
+                margin: 0px;
+                outline: none;
+                position: relative;
+                height: 100%;
+                border-radius: 2px;
+                border: 1px solid $input-border-color;
+                padding: 12px;
+                display: flex;
+                color: $input-border-color;
+                width: 100%;
+            }
+        }
+    }
+}

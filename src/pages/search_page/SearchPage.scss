@@ -1,0 +1,49 @@
+@import "../../assets/scss/app.scss";
+
+.search-page-wrapper {
+    position: relative;
+    padding: 10px;
+
+    .search-header-wrapper {
+        position: relative;
+        min-height: 100px;
+    }
+
+    .search-result-wrapper {
+        position: relative;
+        height: 100%;
+        margin-top: 1.5rem;
+
+        .search-result-grid {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: minmax(150px, auto);
+            column-gap: 10px;
+            row-gap: 10px;
+            grid-auto-flow: dense;
+
+            @include tablet-down {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            @include phone {
+                grid-template-columns: repeat(1, 1fr);
+            }
+        }
+    }
+}
+
+.container {
+    width: 75%;
+    margin: 0px auto;
+
+    @include tablet-down {
+        width: 65%;
+    }
+
+    @include phone {
+        width: 100%;
+    }
+
+}
