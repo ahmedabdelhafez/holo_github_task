@@ -49,7 +49,7 @@ const SearchPage = ({}: Props) => {
       dispatch(setSearchData([]));
       return;
     }
-  }, [searchText.length >= 3 && searchText && selectedData.length <= 0]);
+  }, [selectedData.length <= 0 && searchText.length >= 3 && searchText]);
 
   useEffect(() => {
     console.log("after set search results");
