@@ -1,5 +1,6 @@
 export interface IUsers {
   login?: string;
+  name?: string;
   id?: number;
   node_id?: string;
   avatar_url?: string;
@@ -17,4 +18,13 @@ export interface IUsers {
   received_events_url?: string;
   type?: string;
   site_admin?: boolean;
+  location?: string;
+  email?: string;
+  company?: string;
+  followers?: number;
+  following?: number;
+  owned_private_repos?: number;
+  private_gists?: number;
+  public_gists?: number;
+  public_repos?: number;
 }

@@ -27,8 +27,6 @@ const SearchBar = ({
     { value: 2, label: SearchType.REPOSITORY },
   ]);
 
-  const [searchType, setSearchType] = useState(defaultSearchType);
-
   return (
     <div className="search-bar-wrapper">
       <div className="search-bar-logo">
@@ -41,7 +39,13 @@ const SearchBar = ({
         </div>
       </div>
 
-      <div className="search-bar-input-box">
+      <div
+        className={
+          searchText
+            ? "search-bar-input-box"
+            : "search-bar-input-box center-empty"
+        }
+      >
         <div className="input-wrapper">
           <input
             type="text"
@@ -54,9 +58,8 @@ const SearchBar = ({
         <div className="dropdown-wrapper">
           <select
             className="dropdown-control"
-            value={searchType}
+            value={defaultSearchType}
             onChange={(e) => {
-              setSearchType(parseInt(e.target.value));
               selectedSearchFn(parseInt(e.target.value));
             }}
           >

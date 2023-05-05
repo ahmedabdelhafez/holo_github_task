@@ -18,7 +18,7 @@ export const searchResultSlice = createSlice({
 });
 export const { setSearchData } = searchResultSlice.actions;
 
-export const selectIsLoggedIn = (state: ISearchResultsModel) => {
+export const selectSearchResults = (state: ISearchResultsModel) => {
   return state.searchResult.searchData;
 };
 
