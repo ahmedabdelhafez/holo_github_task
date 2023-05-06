@@ -15,19 +15,25 @@ import {
   selectSearchResults,
   setSearchData,
 } from "../../store/slice/SearchResultSlice";
-import InfiniteScroll from "react-infinite-scroll-component";
+import InfiniteScroll from "react-infinite-scroller";
 
 interface Props {}
 
 const SearchPage = ({}: Props) => {
   const [selectedSearch, SetSelectedSearch] = useState(1);
   const [searchText, setSearchText] = useState("");
+  const [searcePageNumber, setSearcePageNumber] = useState(1);
 
+  const [searchResults, setSearchresults] = useState<IUsers[] | IRepository[]>(
+    []
+  );
   const [searchResultsFilter, setSearchresultsFilter] = useState<
     IUsers[] | IRepository[]
   >([]);
   const dispatch = useDispatch();
   const selectedData = useSelector(selectSearchResults);
+  const [fetching, setFetching] = useState(false);
+
   /**
    * used to handle if the search text have more than or 3 chars
    * and also have a values
@@ -46,6 +52,7 @@ const SearchPage = ({}: Props) => {
     }
 
     if (searchText.length < 3 || !searchText) {
+      setSearchresultsFilter([]);
       dispatch(setSearchData([]));
       return;
     }
@@ -68,7 +75,9 @@ const SearchPage = ({}: Props) => {
   const onSelectedSearchChange = () => {
     console.log("selected search: ", selectedSearch);
     setSearchresultsFilter([]);
+    setSearchresults([]);
     dispatch(setSearchData([]));
+    setSearcePageNumber(1);
     if (selectedSearch === 1 && searchText.length >= 3) {
       console.log("start search for users after dropdown");
       debounceGetUser(searchText);
@@ -83,13 +92,14 @@ const SearchPage = ({}: Props) => {
 
     if (searchText.length < 3 || !searchText) {
       setSearchresultsFilter([]);
+      dispatch(setSearchData([]));
       return;
     }
   };
 
   const getUsers = async (text: string) => {
     try {
-      const data = await getGithubUsers();
+      const data = await getGithubUsers(searcePageNumber);
 
       if (data.data) {
         setSearchresultsFilter([]);
@@ -97,8 +107,32 @@ const SearchPage = ({}: Props) => {
         setSearchresultsFilter(
           filterResult(data.data as IUsers[], searchText, 1)
         );
+        setSearchresults([...searchResults, ...data.data]);
+        setSearcePageNumber(searcePageNumber + 1);
       } else {
         setSearchresultsFilter([]);
+        setSearchresults([]);
+        dispatch(setSearchData([]));
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const getUsersPaging = async () => {
+    try {
+      const data = await getGithubUsers(searcePageNumber);
+
+      if (data.data) {
+        setSearchresultsFilter([]);
+        await Promise.all([dispatch(setSearchData(data.data as IUsers[]))]);
+        setSearchresultsFilter(
+          filterResult(data.data as IUsers[], searchText, 1)
+        );
+        setSearchresults([...searchResults, ...data.data]);
+        setSearcePageNumber(searcePageNumber + 1);
+      } else {
+        setSearchresultsFilter([]);
+        setSearchresults([]);
         dispatch(setSearchData([]));
       }
     } catch (error) {
@@ -110,7 +144,7 @@ const SearchPage = ({}: Props) => {
 
   const getRepos = async () => {
     try {
-      const data = await getGithubRepository();
+      const data = await getGithubRepository(searcePageNumber);
 
       if (data.data) {
         setSearchresultsFilter([]);
@@ -120,8 +154,11 @@ const SearchPage = ({}: Props) => {
         setSearchresultsFilter(
           filterResult(data.data as IRepository[], searchText, 2)
         );
+        setSearchresults([...searchResults, ...data.data]);
+        setSearcePageNumber(searcePageNumber + 1);
       } else {
         setSearchresultsFilter([]);
+        setSearchresults([]);
         dispatch(setSearchData([]));
       }
     } catch (error) {
@@ -152,7 +189,7 @@ const SearchPage = ({}: Props) => {
     setSearchresultsFilter(
       filterResult(selectedData, searchText, selectedSearch === 1 ? 1 : 2)
     );
-  }, [searchText]);
+  }, [searchText.length > 3]);
 
   /**
    * used to clear storage and all arrays if search is null
@@ -160,7 +197,9 @@ const SearchPage = ({}: Props) => {
   useEffect(() => {
     setSearchresultsFilter([]);
     dispatch(setSearchData([]));
-  }, [!searchText]);
+  }, [!searchText || searchText.length === 0]);
+
+  const loadMoreData = () => {};
 
   return (
     <div className="search-page-wrapper">
@@ -175,44 +214,54 @@ const SearchPage = ({}: Props) => {
         </section>
         <section className="search-result-wrapper">
           {/* <InfiniteScroll
-            dataLength={searchResults.length} //This is important field to render the next data
-            next={fetchData}
+            loadMore={getUsersPaging}
             hasMore={true}
-            loader={<h4>Loading...</h4>}
-            endMessage={
-              <p style={{ textAlign: "center" }}>
-                <b>Yay! You have seen it all</b>
-              </p>
-            }
-            // below props only if you need pull down functionality
-            // refreshFunction={}
-            pullDownToRefresh
-            pullDownToRefreshThreshold={50}
-            pullDownToRefreshContent={
-              <h3 style={{ textAlign: "center" }}>
-                &#8595; Pull down to refresh
-              </h3>
-            }
-            releaseToRefreshContent={
-              <h3 style={{ textAlign: "center" }}>
-                &#8593; Release to refresh
-              </h3>
-            }
+            loader={<>Loading ...</>}
           >
+            <ul>
+              {searchResults.map((item) => (
+                <li key={item.id}>
+                  <a href={item.url} target="_blank" rel="noopener">
+                    {item.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
           </InfiniteScroll> */}
           <div className="search-result-grid">
-            {searchResultsFilter.length > 0 &&
+            {/* if search for users */}
+            {searchResults.length > 0 &&
+              searchResultsFilter.length <= 0 &&
               selectedSearch === 1 &&
-              searchResultsFilter &&
+              (searchResults as IUsers[]).map((user, idx) => (
+                <UsersResultCard
+                  user={user}
+                  key={"user".concat(idx.toString())}
+                />
+              ))}
+            {selectedSearch === 1 &&
+              searchResults.length > 0 &&
+              searchResultsFilter.length > 0 &&
               (searchResultsFilter as IUsers[]).map((user, idx) => (
                 <UsersResultCard
                   user={user}
                   key={"user".concat(idx.toString())}
                 />
               ))}
-            {searchResultsFilter.length > 0 &&
+
+            {/* if search for repos */}
+            {searchResults.length > 0 &&
+              searchResultsFilter.length <= 0 &&
               selectedSearch === 2 &&
-              searchResultsFilter &&
+              (searchResults as IRepository[]).map((repo, idx) => (
+                <ReposResultCard
+                  repo={repo}
+                  key={"repo".concat(idx.toString())}
+                />
+              ))}
+            {selectedSearch === 2 &&
+              searchResults.length > 0 &&
+              searchResultsFilter.length > 0 &&
               (searchResultsFilter as IRepository[]).map((repo, idx) => (
                 <ReposResultCard
                   repo={repo}
