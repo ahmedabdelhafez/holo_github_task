@@ -15,7 +15,8 @@ import {
   selectSearchResults,
   setSearchData,
 } from "../../store/slice/SearchResultSlice";
-import InfiniteScroll from "react-infinite-scroller";
+import InfiniteScroll from "react-infinite-scroll-component";
+import { persistor } from "../../store/store";
 
 interface Props {}
 
@@ -33,19 +34,28 @@ const SearchPage = ({}: Props) => {
   const dispatch = useDispatch();
   const selectedData = useSelector(selectSearchResults);
   const [fetching, setFetching] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
 
   /**
    * used to handle if the search text have more than or 3 chars
    * and also have a values
    */
   useEffect(() => {
-    if (selectedSearch === 1 && searchText.length >= 3) {
+    if (
+      selectedSearch === 1 &&
+      searchText.length >= 3 &&
+      selectedData.length <= 0
+    ) {
       console.log("start search for users");
       debounceGetUser(searchText);
       return;
     }
 
-    if (selectedSearch === 2 && searchText.length >= 3) {
+    if (
+      selectedSearch === 2 &&
+      searchText.length >= 3 &&
+      selectedData.length <= 0
+    ) {
       console.log("start search for repos");
       debounceGetrepos();
       return;
@@ -60,9 +70,10 @@ const SearchPage = ({}: Props) => {
 
   useEffect(() => {
     console.log("after set search results");
-    console.log(selectedData);
+    console.log(searchResults);
+    console.log("search filter");
     console.log(searchResultsFilter);
-  }, [selectedData || searchResultsFilter]);
+  }, [selectedData || searchResultsFilter || searchResults]);
 
   /**
    * used to handle the change of the dropdown
@@ -103,10 +114,9 @@ const SearchPage = ({}: Props) => {
 
       if (data.data) {
         setSearchresultsFilter([]);
-        await Promise.all([dispatch(setSearchData(data.data as IUsers[]))]);
-        setSearchresultsFilter(
-          filterResult(data.data as IUsers[], searchText, 1)
-        );
+        await Promise.all([
+          dispatch(setSearchData([...selectedData, ...data.data])),
+        ]);
         setSearchresults([...searchResults, ...data.data]);
         setSearcePageNumber(searcePageNumber + 1);
       } else {
@@ -118,16 +128,16 @@ const SearchPage = ({}: Props) => {
       console.log(error);
     }
   };
+
   const getUsersPaging = async () => {
     try {
       const data = await getGithubUsers(searcePageNumber);
 
       if (data.data) {
         setSearchresultsFilter([]);
-        await Promise.all([dispatch(setSearchData(data.data as IUsers[]))]);
-        setSearchresultsFilter(
-          filterResult(data.data as IUsers[], searchText, 1)
-        );
+        await Promise.all([
+          dispatch(setSearchData([...selectedData, ...data.data])),
+        ]);
         setSearchresults([...searchResults, ...data.data]);
         setSearcePageNumber(searcePageNumber + 1);
       } else {
@@ -149,11 +159,10 @@ const SearchPage = ({}: Props) => {
       if (data.data) {
         setSearchresultsFilter([]);
         await Promise.all([
-          dispatch(setSearchData(data.data as IRepository[])),
+          dispatch(
+            setSearchData([...selectedData, data.data as IRepository[]])
+          ),
         ]);
-        setSearchresultsFilter(
-          filterResult(data.data as IRepository[], searchText, 2)
-        );
         setSearchresults([...searchResults, ...data.data]);
         setSearcePageNumber(searcePageNumber + 1);
       } else {
@@ -168,6 +177,7 @@ const SearchPage = ({}: Props) => {
 
   const debounceGetrepos = useCallback(debounce(getRepos, 2000), []);
 
+  /** function to silter result */
   const filterResult = (
     resultArr: IUsers[] | IRepository[],
     searchText: string,
@@ -189,17 +199,25 @@ const SearchPage = ({}: Props) => {
     setSearchresultsFilter(
       filterResult(selectedData, searchText, selectedSearch === 1 ? 1 : 2)
     );
-  }, [searchText.length > 3]);
+  }, [searchText && searchText.length > 3]);
 
   /**
    * used to clear storage and all arrays if search is null
    */
   useEffect(() => {
     setSearchresultsFilter([]);
-    dispatch(setSearchData([]));
+    // dispatch(setSearchData([]));
   }, [!searchText || searchText.length === 0]);
 
-  const loadMoreData = () => {};
+  useEffect(() => {
+    return function cleanup() {
+      clearStorage();
+    };
+  });
+
+  const clearStorage = async () => {
+    persistor.flush();
+  };
 
   return (
     <div className="search-page-wrapper">
@@ -213,62 +231,54 @@ const SearchPage = ({}: Props) => {
           />
         </section>
         <section className="search-result-wrapper">
-          {/* <InfiniteScroll
-            loadMore={getUsersPaging}
-            hasMore={true}
-            loader={<>Loading ...</>}
+          <InfiniteScroll
+            next={getUsersPaging}
+            hasMore={hasMore}
+            loader={searcePageNumber === 1 ? <></> : <>Loading...</>}
+            dataLength={selectedData.length}
           >
-            <ul>
-              {searchResults.map((item) => (
-                <li key={item.id}>
-                  <a href={item.url} target="_blank" rel="noopener">
-                    {item.name}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </InfiniteScroll> */}
-          <div className="search-result-grid">
-            {/* if search for users */}
-            {searchResults.length > 0 &&
-              searchResultsFilter.length <= 0 &&
-              selectedSearch === 1 &&
-              (searchResults as IUsers[]).map((user, idx) => (
-                <UsersResultCard
-                  user={user}
-                  key={"user".concat(idx.toString())}
-                />
-              ))}
-            {selectedSearch === 1 &&
-              searchResults.length > 0 &&
-              searchResultsFilter.length > 0 &&
-              (searchResultsFilter as IUsers[]).map((user, idx) => (
-                <UsersResultCard
-                  user={user}
-                  key={"user".concat(idx.toString())}
-                />
-              ))}
+            <div className="search-result-grid">
+              {/* if search for users */}
+              {searchResults.length > 0 &&
+                searchResultsFilter.length <= 0 &&
+                selectedSearch === 1 &&
+                (searchResults as IUsers[]).map((user, idx) => (
+                  <UsersResultCard
+                    user={user}
+                    key={"user".concat(idx.toString())}
+                  />
+                ))}
+              {selectedSearch === 1 &&
+                searchResults.length > 0 &&
+                searchResultsFilter.length > 0 &&
+                (searchResultsFilter as IUsers[]).map((user, idx) => (
+                  <UsersResultCard
+                    user={user}
+                    key={"user".concat(idx.toString())}
+                  />
+                ))}
 
-            {/* if search for repos */}
-            {searchResults.length > 0 &&
-              searchResultsFilter.length <= 0 &&
-              selectedSearch === 2 &&
-              (searchResults as IRepository[]).map((repo, idx) => (
-                <ReposResultCard
-                  repo={repo}
-                  key={"repo".concat(idx.toString())}
-                />
-              ))}
-            {selectedSearch === 2 &&
-              searchResults.length > 0 &&
-              searchResultsFilter.length > 0 &&
-              (searchResultsFilter as IRepository[]).map((repo, idx) => (
-                <ReposResultCard
-                  repo={repo}
-                  key={"repo".concat(idx.toString())}
-                />
-              ))}
-          </div>
+              {/* if search for repos */}
+              {searchResults.length > 0 &&
+                searchResultsFilter.length <= 0 &&
+                selectedSearch === 2 &&
+                (searchResults as IRepository[]).map((repo, idx) => (
+                  <ReposResultCard
+                    repo={repo}
+                    key={"repo".concat(idx.toString())}
+                  />
+                ))}
+              {selectedSearch === 2 &&
+                searchResults.length > 0 &&
+                searchResultsFilter.length > 0 &&
+                (searchResultsFilter as IRepository[]).map((repo, idx) => (
+                  <ReposResultCard
+                    repo={repo}
+                    key={"repo".concat(idx.toString())}
+                  />
+                ))}
+            </div>
+          </InfiniteScroll>
         </section>
       </div>
     </div>

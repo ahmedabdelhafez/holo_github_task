@@ -9,6 +9,7 @@ import {
   PERSIST,
   PURGE,
   REGISTER,
+  persistStore,
 } from "redux-persist";
 const rootReducer = combineReducers({
   searchResult: SearchResultSlice,
@@ -30,6 +31,7 @@ export const store = configureStore({
       },
     }),
 });
+export const persistor = persistStore(store);
 
 // Infer the `RootState` and `AppDispatch` types from the store itself
 export type RootState = ReturnType<typeof store.getState>;
